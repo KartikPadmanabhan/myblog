@@ -1,10 +1,5 @@
-<!DOCTYPE html>
-<html>
-<title>USING METHOD OF MOMENTS TO PREDICT DATABASE PERFORMANCE METRICS </title>
 
-<xmp theme="superhero" style="display:none;">
-
-
+# USING METHOD OF MOMENTS TO PREDICT DATABASE PERFORMANCE METRICS
 
 ## Introduction
 
@@ -18,19 +13,20 @@ We initially select a distribution to model our random variable. Our random vari
 Lets say we want to use the method of moments to predict the following AWR statistics for the database Load Profile in AWR statistics. This is given in this section.
 
 
+    %matplotlib inline
     from IPython.display import Image
     import pandas as pd
+    import random
     import matplotlib.pyplot as plt
     from scipy.stats.kde import gaussian_kde
     from plotly import tools
     import scipy.stats as scs
     from scipy.stats import *
-    import plotly.plotly as py
     from scipy import stats
-    from plotly.graph_objs import *
     import plotly.plotly as py
     from plotly.graph_objs import *
     import numpy as np
+    pd.set_option('display.max_columns', 10)
 
 
     Image(filename='images/load_profile.png')
@@ -160,17 +156,7 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
       <th>DB CPU(s)</th>
       <th>DB Time(s)</th>
       <th>Executes (SQL)</th>
-      <th>Global Cache blocks received</th>
-      <th>Global Cache blocks served</th>
-      <th>Hard parses (SQL)</th>
-      <th>IM scan rows</th>
-      <th>Logical read (blocks)</th>
       <th>...</th>
-      <th>Read IO (MB)</th>
-      <th>Read IO requests</th>
-      <th>Redo size (bytes)</th>
-      <th>Rollbacks</th>
-      <th>SQL Work Area (MB)</th>
       <th>Session Logical Read IM</th>
       <th>Transactions</th>
       <th>User calls</th>
@@ -179,16 +165,6 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
     </tr>
     <tr>
       <th>start_time</th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
       <th></th>
       <th></th>
       <th></th>
@@ -210,17 +186,7 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
       <td>8.34</td>
       <td>21.33</td>
       <td>7295.85</td>
-      <td>4067.55</td>
-      <td>4067.66</td>
-      <td>0.53</td>
-      <td>0</td>
-      <td>368308.41</td>
       <td>...</td>
-      <td>146.02</td>
-      <td>12323.87</td>
-      <td>2520626.66</td>
-      <td>204.03</td>
-      <td>471.86</td>
       <td>NaN</td>
       <td>342.13</td>
       <td>3172.36</td>
@@ -234,17 +200,7 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
       <td>5.75</td>
       <td>14.98</td>
       <td>4943.24</td>
-      <td>3371.89</td>
-      <td>3374.17</td>
-      <td>0.41</td>
-      <td>0</td>
-      <td>274450.76</td>
       <td>...</td>
-      <td>237.88</td>
-      <td>9459.97</td>
-      <td>1708287.87</td>
-      <td>143.23</td>
-      <td>282.08</td>
       <td>NaN</td>
       <td>243.01</td>
       <td>2288.04</td>
@@ -258,17 +214,7 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
       <td>1.80</td>
       <td>4.07</td>
       <td>2277.13</td>
-      <td>1618.04</td>
-      <td>1617.80</td>
-      <td>0.30</td>
-      <td>NaN</td>
-      <td>119422.36</td>
       <td>...</td>
-      <td>160.56</td>
-      <td>3976.52</td>
-      <td>577855.43</td>
-      <td>74.32</td>
-      <td>113.44</td>
       <td>NaN</td>
       <td>139.59</td>
       <td>970.47</td>
@@ -282,17 +228,7 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
       <td>6.92</td>
       <td>18.46</td>
       <td>6485.98</td>
-      <td>4164.01</td>
-      <td>4164.06</td>
-      <td>1.67</td>
-      <td>0</td>
-      <td>306467.96</td>
       <td>...</td>
-      <td>155.87</td>
-      <td>9908.58</td>
-      <td>2263412.36</td>
-      <td>198.20</td>
-      <td>424.66</td>
       <td>NaN</td>
       <td>334.05</td>
       <td>3064.53</td>
@@ -306,17 +242,7 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
       <td>5.19</td>
       <td>14.20</td>
       <td>4787.97</td>
-      <td>3469.74</td>
-      <td>3469.68</td>
-      <td>0.94</td>
-      <td>0</td>
-      <td>248284.74</td>
       <td>...</td>
-      <td>192.59</td>
-      <td>8087.20</td>
-      <td>1731536.10</td>
-      <td>151.27</td>
-      <td>288.96</td>
       <td>NaN</td>
       <td>259.02</td>
       <td>2370.28</td>
@@ -333,15 +259,15 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
 
     print (df.columns)
 
-    Index(['Background CPU(s)', 'Block changes', 'DB CPU(s)', 'DB Time(s)',
-           'Executes (SQL)', 'Global Cache blocks received',
-           'Global Cache blocks served', 'Hard parses (SQL)', 'IM scan rows',
-           'Logical read (blocks)', 'Logons', 'Parses (SQL)',
-           'Physical read (blocks)', 'Physical write (blocks)', 'Read IO (MB)',
-           'Read IO requests', 'Redo size (bytes)', 'Rollbacks',
-           'SQL Work Area (MB)', 'Session Logical Read IM', 'Transactions',
-           'User calls', 'Write IO (MB)', 'Write IO requests'],
-          dtype='object', name='stat_name')
+    Index([u'Background CPU(s)', u'Block changes', u'DB CPU(s)', u'DB Time(s)',
+           u'Executes (SQL)', u'Global Cache blocks received',
+           u'Global Cache blocks served', u'Hard parses (SQL)', u'IM scan rows',
+           u'Logical read (blocks)', u'Logons', u'Parses (SQL)',
+           u'Physical read (blocks)', u'Physical write (blocks)', u'Read IO (MB)',
+           u'Read IO requests', u'Redo size (bytes)', u'Rollbacks',
+           u'SQL Work Area (MB)', u'Session Logical Read IM', u'Transactions',
+           u'User calls', u'Write IO (MB)', u'Write IO requests'],
+          dtype='object', name=u'stat_name')
 
 
 ## Distribution Selection
@@ -362,7 +288,7 @@ Say I am interested in Background CPU(s) information, calculating the gamma dist
 
 
 
-    (2.1573536895674299, 0.2304741016253824)
+    (2.157353689567431, 0.23047410162538273)
 
 
 
@@ -380,69 +306,7 @@ Alphas and Betas of Gamma distribution:
 
 
 
-    (20.193917273426234, 9.3605037370925057)
-
-
-
-
-    cpu=df['Background CPU(s)'].values
-    cpu
-
-
-
-
-    array([ 2.34,  1.88,   nan,  2.07,  1.8 ,  2.68,  2.03,  2.33,  2.1 ,
-            1.23,  2.88,  1.63,  3.17,  2.21,  2.22,  1.59,  1.66,   nan,
-            2.56,  2.97,  2.31,   nan,  2.03,  1.71,  2.61,  2.09,  2.47,
-            2.2 ,  2.35,  2.99,  2.1 ,  1.97,  1.21,  2.08,  1.63,   nan,
-            1.95,  1.23,  1.04,  2.58,  1.96,  2.77,  2.14,  2.03,   nan,
-             nan,  2.06,  1.59,   nan,  2.67,  2.38,  1.94,  2.59,  2.17,
-            2.62,  1.88,   nan,  1.96,  1.63,   nan,  1.91,   nan,  1.73,
-            2.16,  1.24,  2.57,  1.98,  2.61,  1.85,   nan,  2.42,  1.96,
-            1.99,  1.58,  2.29,   nan,  2.26,  1.73,  2.44,  1.29,  2.61,
-            2.03,   nan,   nan,  1.77,  2.43,  2.54,  1.9 ,  2.01,   nan,
-            2.16,  1.63,  2.06,  2.56,  1.94,   nan,  2.04,  1.99,  2.21,
-            2.41,  1.86,   nan,   nan,  2.03,  1.69,  2.59,  2.01,  2.09,
-            2.23,  1.17,   nan,  2.14,  3.26,  2.24,  2.31,  1.76,  1.64,
-             nan,  3.02,   nan,  1.99,  1.64,  2.51,  2.  ,  2.16,   nan,
-            2.  ,  3.06,  2.08,  2.11,  1.17,  1.51,  2.93,  1.99,  1.24,
-            2.43,  1.96,  2.73,  2.06,  2.08,   nan,   nan,  2.87,  2.12,
-            1.92,  1.46,   nan,  2.84,  2.33,  2.33,  1.89,  2.  ,  2.64,
-            1.99,   nan,  1.93,  1.87,  1.62,   nan,  2.49,  2.84,  2.23,
-             nan,  1.66,  2.09,  1.16,  2.6 ,  1.94,   nan,  2.23,  2.59,
-            1.91,  1.88,  1.56,  2.66,   nan,  2.16,  1.66,  2.46,  1.28,
-            1.93,   nan,   nan,  2.29,  2.54,  2.47,  1.93,  1.83,  0.95,
-             nan,  1.99,  1.59,  2.03,  2.33,  1.84,   nan,   nan,  2.29,
-            3.31,  2.32,  2.41,  1.89,   nan,  2.34,   nan,  1.98,  1.65,
-            2.57,  1.95,  1.83,  2.19,  1.18,   nan,  2.24,  3.08,  2.13,
-            2.33,  1.82,  1.94,   nan,  2.58,  2.85,  2.24,  1.94,  1.57,
-            2.46,  2.34,  2.63,  1.93,   nan,  2.09,  2.93,  1.94,  2.16,
-            1.29,  3.07,  2.39,   nan,  2.43,  2.84,  2.16,  1.83,  1.06,
-            2.41,  1.86,  2.13,  2.56,  1.86,  1.98,   nan,   nan,  2.79,
-            2.17,  3.07,  2.19,   nan,  2.79,  2.13,  2.26,  1.79,  2.45,
-            1.92,  2.58,  1.96,   nan,  2.63,  1.15,  1.99,  2.96,  2.34,
-             nan,  2.72,  2.16,  1.62,  1.45,  2.06,  1.1 ,  2.42,  1.75,
-            2.6 ,  1.99,   nan,  2.29,  2.58,  1.93,  2.92,  2.27,  2.68,
-            1.41,  2.74,  1.83,  2.14,  1.64,  2.31,  1.2 ,  2.48,  2.04,
-             nan,   nan,  2.29,  2.35,  2.44,  1.78,  2.74,  1.53,  2.06,
-            2.05,  1.6 ,  1.84,  2.37,  1.92,   nan,   nan,  2.26,  3.38,
-            2.29,  2.29,  1.79,   nan,  2.27,  2.48,  2.01,  1.68,  2.34,
-            1.76,  1.98,  2.16,  1.17,   nan,  2.19,  3.16,  2.12,  2.08,
-            1.74,  2.37,   nan,  2.84,  2.24,  2.55,  1.98,  1.59,  2.24,
-            1.73,  2.69,  1.94,   nan,  2.01,  2.96,  1.89,  3.21,  2.44,
-             nan,  2.86,  2.46,  2.06,  1.76,  2.55,  1.74,  2.  ,   nan,
-             nan,  2.73,  2.11,  3.18,  2.31,  2.58,  2.13,  2.04,  1.71,
-            2.23,  1.58,  1.93,   nan,  2.59,  1.24,  2.12,  3.05,  2.3 ,
-             nan,  2.57,  2.08,  3.26,  1.71,  1.89,  1.12,  2.41,  1.86,
-            2.64,  2.03,   nan,  2.31,  2.69,  2.08,  2.94,  2.11,  2.51,
-            1.34,  2.85,  3.29,  0.85,  2.61,  2.08,   nan,   nan,  2.31,
-            2.44,  2.69,  1.85,  2.69,  1.33,  2.73,  3.17,  2.  ,  1.58,
-            1.83,  2.51,  2.01,   nan,  2.26,  3.18,  2.16,  2.5 ,  2.03,
-             nan,  2.64,  3.06,  2.  ,  1.66,  2.34,  1.84,  2.04,  2.38,
-            1.28,   nan,  2.2 ,  3.03,  2.11,  2.49,  1.39,  2.34,   nan,
-            2.7 ,  2.97,  1.94,  1.58,  2.26,  1.77,  2.19,  2.  ,   nan,
-            2.06,  2.96,  2.24,  3.13,  2.31,   nan,  1.38,  1.81,  1.11,
-            2.48,  1.83,  2.07,   nan])
+    (20.19391727342622, 9.360503737092497)
 
 
 
@@ -474,17 +338,7 @@ Using estimated parameters and plot the distribution on top of data
       <th>DB CPU(s)</th>
       <th>DB Time(s)</th>
       <th>Executes (SQL)</th>
-      <th>Global Cache blocks received</th>
-      <th>Global Cache blocks served</th>
-      <th>Hard parses (SQL)</th>
-      <th>IM scan rows</th>
-      <th>Logical read (blocks)</th>
       <th>...</th>
-      <th>Read IO (MB)</th>
-      <th>Read IO requests</th>
-      <th>Redo size (bytes)</th>
-      <th>Rollbacks</th>
-      <th>SQL Work Area (MB)</th>
       <th>Session Logical Read IM</th>
       <th>Transactions</th>
       <th>User calls</th>
@@ -493,16 +347,6 @@ Using estimated parameters and plot the distribution on top of data
     </tr>
     <tr>
       <th>start_time</th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
       <th></th>
       <th></th>
       <th></th>
@@ -524,17 +368,7 @@ Using estimated parameters and plot the distribution on top of data
       <td>8.34</td>
       <td>21.33</td>
       <td>7295.85</td>
-      <td>4067.55</td>
-      <td>4067.66</td>
-      <td>0.53</td>
-      <td>0</td>
-      <td>368308.41</td>
       <td>...</td>
-      <td>146.02</td>
-      <td>12323.87</td>
-      <td>2520626.66</td>
-      <td>204.03</td>
-      <td>471.86</td>
       <td>NaN</td>
       <td>342.13</td>
       <td>3172.36</td>
@@ -548,17 +382,7 @@ Using estimated parameters and plot the distribution on top of data
       <td>5.75</td>
       <td>14.98</td>
       <td>4943.24</td>
-      <td>3371.89</td>
-      <td>3374.17</td>
-      <td>0.41</td>
-      <td>0</td>
-      <td>274450.76</td>
       <td>...</td>
-      <td>237.88</td>
-      <td>9459.97</td>
-      <td>1708287.87</td>
-      <td>143.23</td>
-      <td>282.08</td>
       <td>NaN</td>
       <td>243.01</td>
       <td>2288.04</td>
@@ -572,17 +396,7 @@ Using estimated parameters and plot the distribution on top of data
       <td>1.80</td>
       <td>4.07</td>
       <td>2277.13</td>
-      <td>1618.04</td>
-      <td>1617.80</td>
-      <td>0.30</td>
-      <td>NaN</td>
-      <td>119422.36</td>
       <td>...</td>
-      <td>160.56</td>
-      <td>3976.52</td>
-      <td>577855.43</td>
-      <td>74.32</td>
-      <td>113.44</td>
       <td>NaN</td>
       <td>139.59</td>
       <td>970.47</td>
@@ -596,17 +410,7 @@ Using estimated parameters and plot the distribution on top of data
       <td>6.92</td>
       <td>18.46</td>
       <td>6485.98</td>
-      <td>4164.01</td>
-      <td>4164.06</td>
-      <td>1.67</td>
-      <td>0</td>
-      <td>306467.96</td>
       <td>...</td>
-      <td>155.87</td>
-      <td>9908.58</td>
-      <td>2263412.36</td>
-      <td>198.20</td>
-      <td>424.66</td>
       <td>NaN</td>
       <td>334.05</td>
       <td>3064.53</td>
@@ -620,17 +424,7 @@ Using estimated parameters and plot the distribution on top of data
       <td>5.19</td>
       <td>14.20</td>
       <td>4787.97</td>
-      <td>3469.74</td>
-      <td>3469.68</td>
-      <td>0.94</td>
-      <td>0</td>
-      <td>248284.74</td>
       <td>...</td>
-      <td>192.59</td>
-      <td>8087.20</td>
-      <td>1731536.10</td>
-      <td>151.27</td>
-      <td>288.96</td>
       <td>NaN</td>
       <td>259.02</td>
       <td>2370.28</td>
@@ -645,21 +439,120 @@ Using estimated parameters and plot the distribution on top of data
 
 
 
+    # Generate random colormap
+    def rand_cmap(nlabels, type='bright', first_color_black=True, last_color_black=False, verbose=True):
+        """
+        Creates a random colormap to be used together with matplotlib. Useful for segmentation tasks
+        :param nlabels: Number of labels (size of colormap)
+        :param type: 'bright' for strong colors, 'soft' for pastel colors
+        :param first_color_black: Option to use first color as black, True or False
+        :param last_color_black: Option to use last color as black, True or False
+        :param verbose: Prints the number of labels and shows the colormap. True or False
+        :return: colormap for matplotlib
+        """
+        from matplotlib.colors import LinearSegmentedColormap
+        import colorsys
+        import numpy as np
+    
+        if type not in ('bright', 'soft'):
+            print ('Please choose "bright" or "soft" for type')
+            return
+    
+        if verbose:
+            print('Number of labels: ' + str(nlabels))
+    
+        # Generate color map for bright colors, based on hsv
+        if type == 'bright':
+            randHSVcolors = [(np.random.uniform(low=0.0, high=1),
+                              np.random.uniform(low=0.2, high=1),
+                              np.random.uniform(low=0.9, high=1)) for i in xrange(nlabels)]
+    
+            # Convert HSV list to RGB
+            randRGBcolors = []
+            for HSVcolor in randHSVcolors:
+                randRGBcolors.append(colorsys.hsv_to_rgb(HSVcolor[0], HSVcolor[1], HSVcolor[2]))
+    
+            if first_color_black:
+                randRGBcolors[0] = [0, 0, 0]
+    
+            if last_color_black:
+                randRGBcolors[-1] = [0, 0, 0]
+    
+            random_colormap = LinearSegmentedColormap.from_list('new_map', randRGBcolors, N=nlabels)
+    
+        # Generate soft pastel colors, by limiting the RGB spectrum
+        if type == 'soft':
+            low = 0.6
+            high = 0.95
+            randRGBcolors = [(np.random.uniform(low=low, high=high),
+                              np.random.uniform(low=low, high=high),
+                              np.random.uniform(low=low, high=high)) for i in xrange(nlabels)]
+    
+            if first_color_black:
+                randRGBcolors[0] = [0, 0, 0]
+    
+            if last_color_black:
+                randRGBcolors[-1] = [0, 0, 0]
+            random_colormap = LinearSegmentedColormap.from_list('new_map', randRGBcolors, N=nlabels)
+    
+        # Display colorbar
+        if verbose:
+            from matplotlib import colors, colorbar
+            from matplotlib import pyplot as plt
+            fig, ax = plt.subplots(1, 1, figsize=(15, 0.5))
+    
+            bounds = np.linspace(0, nlabels, nlabels + 1)
+            norm = colors.BoundaryNorm(bounds, nlabels)
+    
+            cb = colorbar.ColorbarBase(ax, cmap=random_colormap, norm=norm, spacing='proportional', ticks=None,
+                                       boundaries=bounds, format='%1i', orientation=u'horizontal')
+    
+        return random_colormap
+
+
+    bright_cmap = rand_cmap(50, type='bright', first_color_black=False, last_color_black=True, verbose=True)
+
+    Number of labels: 50
+
+
+
+![png](method_of_moments_files/method_of_moments_23_1.png)
+
+
+
+    soft_cmap = rand_cmap(50, type='soft', first_color_black=False, last_color_black=True, verbose=True)
+
+    Number of labels: 50
+
+
+
+![png](method_of_moments_files/method_of_moments_24_1.png)
+
+
+
     '''Use the estimated parameters and plot the distribution on top of data'''
     fig, ax = plt.subplots()
+    col=soft_cmap(random.choice(range(50)))
     # Plot those values on top of the real data
-    ax = df['Background CPU(s)'].hist(bins=20, normed=1, edgecolor='none', figsize=(10, 7))
+    ax = df['Background CPU(s)'].hist(bins=20, normed=1, color=col, figsize=(10, 7))
     ax.set_xlabel('Statistics')
     ax.set_ylabel('Probability Density')
     ax.set_title('Background CPU(s)')
-    
-    ax.plot(x_vals, gamma_p, color='r', label='Gamma', alpha=0.6)
+    col=bright_cmap(random.choice(range(50)))
+    ax.plot(x_vals,  gamma_p, c=col, label='Gamma')
+    ax.set_axis_bgcolor('white')
     ax.legend()
-    fig.savefig('images/backgroundcpu.png')
     #py.iplot_mpl(fig, filename='s6_log-scales')
 
 
-![png](method_of_moments_files/method_of_moments_23_0.png)
+
+
+    <matplotlib.legend.Legend at 0x11325cbd0>
+
+
+
+
+![png](method_of_moments_files/method_of_moments_25_1.png)
 
 
 
@@ -676,11 +569,14 @@ Using estimated parameters and plot the distribution on top of data
         gamma_p = gamma_rv.pdf(x_vals)
         fig, ax = plt.subplots()
         # Plot those values on top of the real data
-        ax = df[col].hist(bins=20, normed=1, edgecolor='none')
+        mycol=soft_cmap(random.choice(range(50)))
+        ax = df[col].hist(bins=20, normed=1, color=mycol, figsize=(10, 7))
+        ax.set_axis_bgcolor('white')
         ax.set_xlabel('Statistics')
         ax.set_ylabel('Probability Density')
         ax.set_title(col)
-        ax.plot(x_vals, gamma_p, color='r', label='Gamma', alpha=0.6)
+        mycol=bright_cmap(random.choice(range(50)))
+        ax.plot(x_vals, gamma_p, color=mycol, label='Gamma')
         ax.legend()
 
 
@@ -689,15 +585,15 @@ Using estimated parameters and plot the distribution on top of data
 
 
 
-    Index(['Background CPU(s)', 'Block changes', 'DB CPU(s)', 'DB Time(s)',
-           'Executes (SQL)', 'Global Cache blocks received',
-           'Global Cache blocks served', 'Hard parses (SQL)', 'IM scan rows',
-           'Logical read (blocks)', 'Logons', 'Parses (SQL)',
-           'Physical read (blocks)', 'Physical write (blocks)', 'Read IO (MB)',
-           'Read IO requests', 'Redo size (bytes)', 'Rollbacks',
-           'SQL Work Area (MB)', 'Session Logical Read IM', 'Transactions',
-           'User calls', 'Write IO (MB)', 'Write IO requests'],
-          dtype='object', name='stat_name')
+    Index([u'Background CPU(s)', u'Block changes', u'DB CPU(s)', u'DB Time(s)',
+           u'Executes (SQL)', u'Global Cache blocks received',
+           u'Global Cache blocks served', u'Hard parses (SQL)', u'IM scan rows',
+           u'Logical read (blocks)', u'Logons', u'Parses (SQL)',
+           u'Physical read (blocks)', u'Physical write (blocks)', u'Read IO (MB)',
+           u'Read IO requests', u'Redo size (bytes)', u'Rollbacks',
+           u'SQL Work Area (MB)', u'Session Logical Read IM', u'Transactions',
+           u'User calls', u'Write IO (MB)', u'Write IO requests'],
+          dtype='object', name=u'stat_name')
 
 
 
@@ -721,39 +617,39 @@ Lets just pick the following important statistics to estimate:
         fig.savefig('images/'+col)
 
 
-![png](method_of_moments_files/method_of_moments_28_0.png)
+![png](method_of_moments_files/method_of_moments_30_0.png)
 
 
 
-![png](method_of_moments_files/method_of_moments_28_1.png)
+![png](method_of_moments_files/method_of_moments_30_1.png)
 
 
 
-![png](method_of_moments_files/method_of_moments_28_2.png)
+![png](method_of_moments_files/method_of_moments_30_2.png)
 
 
 
-![png](method_of_moments_files/method_of_moments_28_3.png)
+![png](method_of_moments_files/method_of_moments_30_3.png)
 
 
 
-![png](method_of_moments_files/method_of_moments_28_4.png)
+![png](method_of_moments_files/method_of_moments_30_4.png)
 
 
 
-![png](method_of_moments_files/method_of_moments_28_5.png)
+![png](method_of_moments_files/method_of_moments_30_5.png)
 
 
 
-![png](method_of_moments_files/method_of_moments_28_6.png)
+![png](method_of_moments_files/method_of_moments_30_6.png)
 
 
 
-![png](method_of_moments_files/method_of_moments_28_7.png)
+![png](method_of_moments_files/method_of_moments_30_7.png)
 
 
 
-![png](method_of_moments_files/method_of_moments_28_8.png)
+![png](method_of_moments_files/method_of_moments_30_8.png)
 
 
 
@@ -772,17 +668,7 @@ Lets just pick the following important statistics to estimate:
       <th>DB CPU(s)</th>
       <th>DB Time(s)</th>
       <th>Executes (SQL)</th>
-      <th>Global Cache blocks received</th>
-      <th>Global Cache blocks served</th>
-      <th>Hard parses (SQL)</th>
-      <th>IM scan rows</th>
-      <th>Logical read (blocks)</th>
       <th>...</th>
-      <th>Read IO (MB)</th>
-      <th>Read IO requests</th>
-      <th>Redo size (bytes)</th>
-      <th>Rollbacks</th>
-      <th>SQL Work Area (MB)</th>
       <th>Session Logical Read IM</th>
       <th>Transactions</th>
       <th>User calls</th>
@@ -791,16 +677,6 @@ Lets just pick the following important statistics to estimate:
     </tr>
     <tr>
       <th>start_time</th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
       <th></th>
       <th></th>
       <th></th>
@@ -822,17 +698,7 @@ Lets just pick the following important statistics to estimate:
       <td>8.34</td>
       <td>21.33</td>
       <td>7295.85</td>
-      <td>4067.55</td>
-      <td>4067.66</td>
-      <td>0.53</td>
-      <td>0</td>
-      <td>368308.41</td>
       <td>...</td>
-      <td>146.02</td>
-      <td>12323.87</td>
-      <td>2520626.66</td>
-      <td>204.03</td>
-      <td>471.86</td>
       <td>NaN</td>
       <td>342.13</td>
       <td>3172.36</td>
@@ -846,17 +712,7 @@ Lets just pick the following important statistics to estimate:
       <td>5.75</td>
       <td>14.98</td>
       <td>4943.24</td>
-      <td>3371.89</td>
-      <td>3374.17</td>
-      <td>0.41</td>
-      <td>0</td>
-      <td>274450.76</td>
       <td>...</td>
-      <td>237.88</td>
-      <td>9459.97</td>
-      <td>1708287.87</td>
-      <td>143.23</td>
-      <td>282.08</td>
       <td>NaN</td>
       <td>243.01</td>
       <td>2288.04</td>
@@ -870,17 +726,7 @@ Lets just pick the following important statistics to estimate:
       <td>1.80</td>
       <td>4.07</td>
       <td>2277.13</td>
-      <td>1618.04</td>
-      <td>1617.80</td>
-      <td>0.30</td>
-      <td>NaN</td>
-      <td>119422.36</td>
       <td>...</td>
-      <td>160.56</td>
-      <td>3976.52</td>
-      <td>577855.43</td>
-      <td>74.32</td>
-      <td>113.44</td>
       <td>NaN</td>
       <td>139.59</td>
       <td>970.47</td>
@@ -894,17 +740,7 @@ Lets just pick the following important statistics to estimate:
       <td>6.92</td>
       <td>18.46</td>
       <td>6485.98</td>
-      <td>4164.01</td>
-      <td>4164.06</td>
-      <td>1.67</td>
-      <td>0</td>
-      <td>306467.96</td>
       <td>...</td>
-      <td>155.87</td>
-      <td>9908.58</td>
-      <td>2263412.36</td>
-      <td>198.20</td>
-      <td>424.66</td>
       <td>NaN</td>
       <td>334.05</td>
       <td>3064.53</td>
@@ -918,17 +754,7 @@ Lets just pick the following important statistics to estimate:
       <td>5.19</td>
       <td>14.20</td>
       <td>4787.97</td>
-      <td>3469.74</td>
-      <td>3469.68</td>
-      <td>0.94</td>
-      <td>0</td>
-      <td>248284.74</td>
       <td>...</td>
-      <td>192.59</td>
-      <td>8087.20</td>
-      <td>1731536.10</td>
-      <td>151.27</td>
-      <td>288.96</td>
       <td>NaN</td>
       <td>259.02</td>
       <td>2370.28</td>
@@ -950,7 +776,7 @@ For example if we want to predict MOM's for "Global Cache blocks served", we jus
     fig.savefig('images/cache_blocks.png')
 
 
-![png](method_of_moments_files/method_of_moments_31_0.png)
+![png](method_of_moments_files/method_of_moments_33_0.png)
 
 
 For "Rollbacks" example our estimation is:
@@ -960,79 +786,9 @@ For "Rollbacks" example our estimation is:
     fig.savefig('images/rollbacks.png')
 
 
-![png](method_of_moments_files/method_of_moments_33_0.png)
+![png](method_of_moments_files/method_of_moments_35_0.png)
 
 
 ## Conclusion:
 
 As we can we our estimations (plotted in red) are pretty good estimation of our actual values that we observe in our real outputs. This concludes our discussion on MOM estimators on database statistics.
-
-
-    
-
-
-    
-
-
-    
-
-
-    dist_names = ['gamma', 'lognorm']
-    limit = 30
-    y=df['Background CPU(s)'].values
-    '''
-        #output
-        results = {}
-        size = y.__len__()
-        x = scipy.arange(size)
-        h = plt.hist(y, bins=limit, color='w')
-        for dist_name in dist_names:
-            dist = getattr(scipy.stats, dist_name)
-            param = dist.fit(y)
-            goodness_of_fit = kstest(y, dist_name, param)
-            results[dist_name] = goodness_of_fit
-            pdf_fitted = dist.pdf(x, *param) * size
-            plt.plot(pdf_fitted, label=dist_name)
-            plt.xlim(0, limit-1)
-            plt.legend(loc='upper right')
-        for k, v in results.iteritems():
-            print(k, v)
-        plt.show()
-    '''
-
-
-
-
-    "\n    #output\n    results = {}\n    size = y.__len__()\n    x = scipy.arange(size)\n    h = plt.hist(y, bins=limit, color='w')\n    for dist_name in dist_names:\n        dist = getattr(scipy.stats, dist_name)\n        param = dist.fit(y)\n        goodness_of_fit = kstest(y, dist_name, param)\n        results[dist_name] = goodness_of_fit\n        pdf_fitted = dist.pdf(x, *param) * size\n        plt.plot(pdf_fitted, label=dist_name)\n        plt.xlim(0, limit-1)\n        plt.legend(loc='upper right')\n    for k, v in results.iteritems():\n        print(k, v)\n    plt.show()\n"
-
-
-
-
-    df['Background CPU(s)']=df['Background CPU(s)'].fillna(sample_mean)
-
-
-    import scipy
-    x = scipy.arange(size)
-
-
-    goodness_of_fit = kstest(y, 'gamma', a )
-
-
-    a=gamma.fit(y)
-
-
-    a
-
-
-
-
-    (10861.304542462454, -43.879827740201861, 0.0042386392823745064)
-
-
-
-</xmp>
-
-<script src="http://cdn.ztx.io/strapdown/strapdown.min.js"></script> 
-</html>
-
-    
