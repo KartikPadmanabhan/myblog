@@ -532,22 +532,24 @@ Using estimated parameters and plot the distribution on top of data
 
     '''Use the estimated parameters and plot the distribution on top of data'''
     fig, ax = plt.subplots()
-    col=soft_cmap(random.choice(range(50)))
+    scol=soft_cmap(random.choice(range(50)))
+    bcol1=bright_cmap(random.choice(range(50)))
+    bcol2=bright_cmap(random.choice(range(50)))
     # Plot those values on top of the real data
-    ax = df['Background CPU(s)'].hist(bins=20, normed=1, color=col, figsize=(10, 7))
+    ax = df['Background CPU(s)'].hist(bins=20, normed=1, color=bcol1, figsize=(10, 7))
     ax.set_xlabel('Statistics')
     ax.set_ylabel('Probability Density')
     ax.set_title('Background CPU(s)')
-    col=bright_cmap(random.choice(range(50)))
-    ax.plot(x_vals,  gamma_p, c=col, label='Gamma')
-    ax.set_axis_bgcolor('white')
+    scol2=bright_cmap(random.choice(range(50)))
+    ax.plot(x_vals,  gamma_p, c=bcol2, label='Gamma')
+    ax.set_axis_bgcolor(scol)
     ax.legend()
     #py.iplot_mpl(fig, filename='s6_log-scales')
 
 
 
 
-    <matplotlib.legend.Legend at 0x11325cbd0>
+    <matplotlib.legend.Legend at 0x11184a3d0>
 
 
 
@@ -569,14 +571,15 @@ Using estimated parameters and plot the distribution on top of data
         gamma_p = gamma_rv.pdf(x_vals)
         fig, ax = plt.subplots()
         # Plot those values on top of the real data
-        mycol=soft_cmap(random.choice(range(50)))
-        ax = df[col].hist(bins=20, normed=1, color=mycol, figsize=(10, 7))
-        ax.set_axis_bgcolor('white')
+        scol=soft_cmap(random.choice(range(50)))
+        bcol1=bright_cmap(random.choice(range(50)))
+        bcol2=bright_cmap(random.choice(range(50)))
+        ax = df[col].hist(bins=20, normed=1, color=bcol1, figsize=(10, 7))
+        ax.set_axis_bgcolor(scol)
         ax.set_xlabel('Statistics')
         ax.set_ylabel('Probability Density')
         ax.set_title(col)
-        mycol=bright_cmap(random.choice(range(50)))
-        ax.plot(x_vals, gamma_p, color=mycol, label='Gamma')
+        ax.plot(x_vals, gamma_p, color=bcol2, label='Predicted Values')
         ax.legend()
 
 
@@ -792,8 +795,3 @@ For "Rollbacks" example our estimation is:
 ## Conclusion:
 
 As we can we our estimations (plotted in red) are pretty good estimation of our actual values that we observe in our real outputs. This concludes our discussion on MOM estimators on database statistics.
-
-</xmp>
-
-<script src="http://cdn.ztx.io/strapdown/strapdown.min.js"></script> 
-</html>

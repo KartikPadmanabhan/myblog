@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html>
-<title>USING METHOD OF MOMENTS TO PREDICT DATABASE PERFORMANCE METRICS </title>
+<title>USING MAXIMUM LIKEHOOD ESTIMATION TO PREDICT DATABASE PERFORMANCE METRICS </title>
 
 <xmp theme="superhero" style="display:none;">
 
 
 ## Introduction
 
-This article exploits statistical technique method of moments (MOM) and generalized method of moments (GMM)  to estimate database statistics from the past data. Both GMM and MOM's are parametric  unsupervised form of learning. I am restricting this to Oracle Database in this example, but it can be extended to any database system.
+This article exploits statistical technique Maximum Likehood Estimation to estimate database statistics from the past data. MLE just like MOM(method of moments) is a parametric estimation method, where we make assumptions on the distribution of underlying data. This is a continuation of my earlier post where I used method of moments to estimate our parameters. I am restricting this to Oracle Database in this example, but it can be extended to any database system.
 
 We initially select a distribution to model our random variable. Our random variables in database statistical parameters could be any statistic that we collect say in AWR report. To start our analysis, we collected AWR reports over several months. We then scraped these data and stored our metrics in csv formats. I have presented some csv files corresponding to these statistics in my github page.
 
@@ -20,17 +20,18 @@ Lets say we want to use the method of moments to predict the following AWR stati
     %matplotlib inline
     from IPython.display import Image
     import pandas as pd
-    import random
     import matplotlib.pyplot as plt
     from scipy.stats.kde import gaussian_kde
     from plotly import tools
     import scipy.stats as scs
     from scipy.stats import *
+    import plotly.plotly as py
+    import random
     from scipy import stats
+    from plotly.graph_objs import *
     import plotly.plotly as py
     from plotly.graph_objs import *
     import numpy as np
-    pd.set_option('display.max_columns', 10)
 
 
     Image(filename='images/load_profile.png')
@@ -38,7 +39,7 @@ Lets say we want to use the method of moments to predict the following AWR stati
 
 
 
-![png](method_of_moments_files/method_of_moments_6_0.png)
+![png](mle_files/mle_6_0.png)
 
 
 
@@ -160,7 +161,17 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
       <th>DB CPU(s)</th>
       <th>DB Time(s)</th>
       <th>Executes (SQL)</th>
+      <th>Global Cache blocks received</th>
+      <th>Global Cache blocks served</th>
+      <th>Hard parses (SQL)</th>
+      <th>IM scan rows</th>
+      <th>Logical read (blocks)</th>
       <th>...</th>
+      <th>Read IO (MB)</th>
+      <th>Read IO requests</th>
+      <th>Redo size (bytes)</th>
+      <th>Rollbacks</th>
+      <th>SQL Work Area (MB)</th>
       <th>Session Logical Read IM</th>
       <th>Transactions</th>
       <th>User calls</th>
@@ -169,6 +180,16 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
     </tr>
     <tr>
       <th>start_time</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
       <th></th>
       <th></th>
       <th></th>
@@ -190,7 +211,17 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
       <td>8.34</td>
       <td>21.33</td>
       <td>7295.85</td>
+      <td>4067.55</td>
+      <td>4067.66</td>
+      <td>0.53</td>
+      <td>0</td>
+      <td>368308.41</td>
       <td>...</td>
+      <td>146.02</td>
+      <td>12323.87</td>
+      <td>2520626.66</td>
+      <td>204.03</td>
+      <td>471.86</td>
       <td>NaN</td>
       <td>342.13</td>
       <td>3172.36</td>
@@ -204,7 +235,17 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
       <td>5.75</td>
       <td>14.98</td>
       <td>4943.24</td>
+      <td>3371.89</td>
+      <td>3374.17</td>
+      <td>0.41</td>
+      <td>0</td>
+      <td>274450.76</td>
       <td>...</td>
+      <td>237.88</td>
+      <td>9459.97</td>
+      <td>1708287.87</td>
+      <td>143.23</td>
+      <td>282.08</td>
       <td>NaN</td>
       <td>243.01</td>
       <td>2288.04</td>
@@ -218,7 +259,17 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
       <td>1.80</td>
       <td>4.07</td>
       <td>2277.13</td>
+      <td>1618.04</td>
+      <td>1617.80</td>
+      <td>0.30</td>
+      <td>NaN</td>
+      <td>119422.36</td>
       <td>...</td>
+      <td>160.56</td>
+      <td>3976.52</td>
+      <td>577855.43</td>
+      <td>74.32</td>
+      <td>113.44</td>
       <td>NaN</td>
       <td>139.59</td>
       <td>970.47</td>
@@ -232,7 +283,17 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
       <td>6.92</td>
       <td>18.46</td>
       <td>6485.98</td>
+      <td>4164.01</td>
+      <td>4164.06</td>
+      <td>1.67</td>
+      <td>0</td>
+      <td>306467.96</td>
       <td>...</td>
+      <td>155.87</td>
+      <td>9908.58</td>
+      <td>2263412.36</td>
+      <td>198.20</td>
+      <td>424.66</td>
       <td>NaN</td>
       <td>334.05</td>
       <td>3064.53</td>
@@ -246,7 +307,17 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
       <td>5.19</td>
       <td>14.20</td>
       <td>4787.97</td>
+      <td>3469.74</td>
+      <td>3469.68</td>
+      <td>0.94</td>
+      <td>0</td>
+      <td>248284.74</td>
       <td>...</td>
+      <td>192.59</td>
+      <td>8087.20</td>
+      <td>1731536.10</td>
+      <td>151.27</td>
+      <td>288.96</td>
       <td>NaN</td>
       <td>259.02</td>
       <td>2370.28</td>
@@ -274,52 +345,114 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
           dtype='object', name=u'stat_name')
 
 
+
+    df.info()
+
+    <class 'pandas.core.frame.DataFrame'>
+    Index: 463 entries, 01-APR-15 08.00.00.000000 AM to 31-OCT-14 08.00.00.000000 AM
+    Data columns (total 24 columns):
+    Background CPU(s)               393 non-null float64
+    Block changes                   463 non-null float64
+    DB CPU(s)                       463 non-null float64
+    DB Time(s)                      463 non-null float64
+    Executes (SQL)                  463 non-null float64
+    Global Cache blocks received    463 non-null float64
+    Global Cache blocks served      463 non-null float64
+    Hard parses (SQL)               463 non-null float64
+    IM scan rows                    393 non-null float64
+    Logical read (blocks)           463 non-null float64
+    Logons                          463 non-null float64
+    Parses (SQL)                    463 non-null float64
+    Physical read (blocks)          463 non-null float64
+    Physical write (blocks)         463 non-null float64
+    Read IO (MB)                    463 non-null float64
+    Read IO requests                463 non-null float64
+    Redo size (bytes)               463 non-null float64
+    Rollbacks                       463 non-null float64
+    SQL Work Area (MB)              463 non-null float64
+    Session Logical Read IM         0 non-null float64
+    Transactions                    463 non-null float64
+    User calls                      463 non-null float64
+    Write IO (MB)                   463 non-null float64
+    Write IO requests               463 non-null float64
+    dtypes: float64(24)
+    memory usage: 90.4+ KB
+
+
+since df.info() showed some null columns I am going to fill all nans into the grouped mean.
+
+
+    cols=df.columns
+    for col in cols:
+        meancol=np.mean(df[col])
+        df[col]=df[col].fillna(meancol)
+    df.info()
+
+    <class 'pandas.core.frame.DataFrame'>
+    Index: 463 entries, 01-APR-15 08.00.00.000000 AM to 31-OCT-14 08.00.00.000000 AM
+    Data columns (total 24 columns):
+    Background CPU(s)               463 non-null float64
+    Block changes                   463 non-null float64
+    DB CPU(s)                       463 non-null float64
+    DB Time(s)                      463 non-null float64
+    Executes (SQL)                  463 non-null float64
+    Global Cache blocks received    463 non-null float64
+    Global Cache blocks served      463 non-null float64
+    Hard parses (SQL)               463 non-null float64
+    IM scan rows                    463 non-null float64
+    Logical read (blocks)           463 non-null float64
+    Logons                          463 non-null float64
+    Parses (SQL)                    463 non-null float64
+    Physical read (blocks)          463 non-null float64
+    Physical write (blocks)         463 non-null float64
+    Read IO (MB)                    463 non-null float64
+    Read IO requests                463 non-null float64
+    Redo size (bytes)               463 non-null float64
+    Rollbacks                       463 non-null float64
+    SQL Work Area (MB)              463 non-null float64
+    Session Logical Read IM         0 non-null float64
+    Transactions                    463 non-null float64
+    User calls                      463 non-null float64
+    Write IO (MB)                   463 non-null float64
+    Write IO requests               463 non-null float64
+    dtypes: float64(24)
+    memory usage: 90.4+ KB
+
+
 ## Distribution Selection
 
-All of these database statistics are continous random variables, so we model using some continous distributions.
-scipy offers several continous distributions for the purpose of modelling, viz Gamma, Normal, Anglit, Arcsine, Beta, Cauchy etc.
+All of these database statistics are continous random variables, so we model using some continous distributions. scipy offers several continous distributions for the purpose of modelling, viz Gamma, Normal, Anglit, Arcsine, Beta, Cauchy etc.
 
-Once we have the estimated model, we can then use the Kolmogorov-Smirov test to evaluate your fit using scipy.stats.kstest. Lets start with the most popular gamma distribution.
+Since we have already chosen a our distribution on the method of moments estimation, I am going to continue our discussion with Gamma distribution here.
 
-Say I am interested in Background CPU(s) information, calculating the gamma distribution parameters alpha and beta.
-
-
-
-    sample_mean=df['Background CPU(s)'].mean()
-    sample_var=np.var(df['Background CPU(s)'], ddof=1)
-    (sample_mean,sample_var)
-
-
-
-
-    (2.157353689567431, 0.23047410162538273)
-
-
-
-Alphas and Betas of Gamma distribution:
-
-
-    ###############
-    #### Gamma ####
-    ###############
-    
-    alpha = sample_mean**2 / sample_var
-    beta = sample_mean / sample_var 
-    alpha,beta
-
-
-
-
-    (20.19391727342622, 9.360503737092497)
-
-
-
-## MOM Estimation
 
 Using estimated parameters and plot the distribution on top of data
 
+## MAXIMUM LIKELIHOOD ESTIMATION
 
-    gamma_rv = scs.gamma(a=alpha, scale=1/beta)
+Say I am interested in Background CPU(s) information. 
+
+scipy.stats.gamma has a function .fit that helps us estimate the Maximum Likelihood Error Estimates. Appying directly on the distribution
+
+
+     # Use MLE to fit a gamma distribution
+    ahat, loc, bhat = scs.gamma.fit(df['Background CPU(s)'], floc=0)
+    alpha_mle, beta_mle = ahat, 1./bhat
+
+
+    alpha_mle, beta_mle
+
+
+
+
+    (22.181260590846556, 10.281698683952982)
+
+
+
+Now generating our distribution with the MLE estimates.
+
+
+    gamma_rv = scs.gamma(a=alpha_mle, scale=1/beta_mle)
 
 
     # Get the probability for each value in the data
@@ -342,7 +475,17 @@ Using estimated parameters and plot the distribution on top of data
       <th>DB CPU(s)</th>
       <th>DB Time(s)</th>
       <th>Executes (SQL)</th>
+      <th>Global Cache blocks received</th>
+      <th>Global Cache blocks served</th>
+      <th>Hard parses (SQL)</th>
+      <th>IM scan rows</th>
+      <th>Logical read (blocks)</th>
       <th>...</th>
+      <th>Read IO (MB)</th>
+      <th>Read IO requests</th>
+      <th>Redo size (bytes)</th>
+      <th>Rollbacks</th>
+      <th>SQL Work Area (MB)</th>
       <th>Session Logical Read IM</th>
       <th>Transactions</th>
       <th>User calls</th>
@@ -362,17 +505,37 @@ Using estimated parameters and plot the distribution on top of data
       <th></th>
       <th></th>
       <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>01-APR-15 08.00.00.000000 AM</th>
-      <td>2.34</td>
+      <td>2.340000</td>
       <td>7171.66</td>
       <td>8.34</td>
       <td>21.33</td>
       <td>7295.85</td>
+      <td>4067.55</td>
+      <td>4067.66</td>
+      <td>0.53</td>
+      <td>0</td>
+      <td>368308.41</td>
       <td>...</td>
+      <td>146.02</td>
+      <td>12323.87</td>
+      <td>2520626.66</td>
+      <td>204.03</td>
+      <td>471.86</td>
       <td>NaN</td>
       <td>342.13</td>
       <td>3172.36</td>
@@ -381,12 +544,22 @@ Using estimated parameters and plot the distribution on top of data
     </tr>
     <tr>
       <th>01-APR-15 10.00.00.000000 PM</th>
-      <td>1.88</td>
+      <td>1.880000</td>
       <td>5829.02</td>
       <td>5.75</td>
       <td>14.98</td>
       <td>4943.24</td>
+      <td>3371.89</td>
+      <td>3374.17</td>
+      <td>0.41</td>
+      <td>0</td>
+      <td>274450.76</td>
       <td>...</td>
+      <td>237.88</td>
+      <td>9459.97</td>
+      <td>1708287.87</td>
+      <td>143.23</td>
+      <td>282.08</td>
       <td>NaN</td>
       <td>243.01</td>
       <td>2288.04</td>
@@ -395,12 +568,22 @@ Using estimated parameters and plot the distribution on top of data
     </tr>
     <tr>
       <th>01-JAN-15 08.00.00.000000 AM</th>
-      <td>NaN</td>
+      <td>2.157354</td>
       <td>1746.34</td>
       <td>1.80</td>
       <td>4.07</td>
       <td>2277.13</td>
+      <td>1618.04</td>
+      <td>1617.80</td>
+      <td>0.30</td>
+      <td>0</td>
+      <td>119422.36</td>
       <td>...</td>
+      <td>160.56</td>
+      <td>3976.52</td>
+      <td>577855.43</td>
+      <td>74.32</td>
+      <td>113.44</td>
       <td>NaN</td>
       <td>139.59</td>
       <td>970.47</td>
@@ -409,12 +592,22 @@ Using estimated parameters and plot the distribution on top of data
     </tr>
     <tr>
       <th>01-JUL-15 08.00.00.000000 AM</th>
-      <td>2.07</td>
+      <td>2.070000</td>
       <td>6530.64</td>
       <td>6.92</td>
       <td>18.46</td>
       <td>6485.98</td>
+      <td>4164.01</td>
+      <td>4164.06</td>
+      <td>1.67</td>
+      <td>0</td>
+      <td>306467.96</td>
       <td>...</td>
+      <td>155.87</td>
+      <td>9908.58</td>
+      <td>2263412.36</td>
+      <td>198.20</td>
+      <td>424.66</td>
       <td>NaN</td>
       <td>334.05</td>
       <td>3064.53</td>
@@ -423,12 +616,22 @@ Using estimated parameters and plot the distribution on top of data
     </tr>
     <tr>
       <th>01-JUL-15 10.00.00.000000 PM</th>
-      <td>1.80</td>
+      <td>1.800000</td>
       <td>5853.14</td>
       <td>5.19</td>
       <td>14.20</td>
       <td>4787.97</td>
+      <td>3469.74</td>
+      <td>3469.68</td>
+      <td>0.94</td>
+      <td>0</td>
+      <td>248284.74</td>
       <td>...</td>
+      <td>192.59</td>
+      <td>8087.20</td>
+      <td>1731536.10</td>
+      <td>151.27</td>
+      <td>288.96</td>
       <td>NaN</td>
       <td>259.02</td>
       <td>2370.28</td>
@@ -441,6 +644,8 @@ Using estimated parameters and plot the distribution on top of data
 </div>
 
 
+
+This is an optional section but if you want to create the matplotlib images with different random colors use this.
 
 
     # Generate random colormap
@@ -520,7 +725,7 @@ Using estimated parameters and plot the distribution on top of data
 
 
 
-![png](method_of_moments_files/method_of_moments_23_1.png)
+![png](mle_files/mle_29_1.png)
 
 
 
@@ -530,7 +735,7 @@ Using estimated parameters and plot the distribution on top of data
 
 
 
-![png](method_of_moments_files/method_of_moments_24_1.png)
+![png](mle_files/mle_30_1.png)
 
 
 
@@ -545,7 +750,7 @@ Using estimated parameters and plot the distribution on top of data
     ax.set_ylabel('Probability Density')
     ax.set_title('Background CPU(s)')
     scol2=bright_cmap(random.choice(range(50)))
-    ax.plot(x_vals,  gamma_p, c=bcol2, label='Gamma')
+    ax.plot(x_vals,  gamma_p, c=bcol2, label='Predicted MLE values')
     ax.set_axis_bgcolor(scol)
     ax.legend()
     #py.iplot_mpl(fig, filename='s6_log-scales')
@@ -553,18 +758,18 @@ Using estimated parameters and plot the distribution on top of data
 
 
 
-    <matplotlib.legend.Legend at 0x11184a3d0>
+    <matplotlib.legend.Legend at 0x111815790>
 
 
 
 
-![png](method_of_moments_files/method_of_moments_25_1.png)
+![png](mle_files/mle_31_1.png)
 
 
 
     # Lets put everything in a function 
     # Define a function that plots distribution fitted to one month's of data
-    def plot_mom(df, col):
+    def plot_mle(df, col):
         sample_mean=df[col].mean()
         sample_var=np.var(df[col], ddof=1)
         alpha = sample_mean**2 / sample_var
@@ -583,7 +788,7 @@ Using estimated parameters and plot the distribution on top of data
         ax.set_xlabel('Statistics')
         ax.set_ylabel('Probability Density')
         ax.set_title(col)
-        ax.plot(x_vals, gamma_p, color=bcol2, label='Predicted Values')
+        ax.plot(x_vals, gamma_p, color=bcol2, label='Predicted MLE Values')
         ax.legend()
 
 
@@ -620,43 +825,43 @@ Lets just pick the following important statistics to estimate:
 
 
     for col in columns_of_interest:
-        plot_mom(df, col)
+        plot_mle(df, col)
         fig.savefig('images/'+col)
 
 
-![png](method_of_moments_files/method_of_moments_30_0.png)
+![png](mle_files/mle_36_0.png)
 
 
 
-![png](method_of_moments_files/method_of_moments_30_1.png)
+![png](mle_files/mle_36_1.png)
 
 
 
-![png](method_of_moments_files/method_of_moments_30_2.png)
+![png](mle_files/mle_36_2.png)
 
 
 
-![png](method_of_moments_files/method_of_moments_30_3.png)
+![png](mle_files/mle_36_3.png)
 
 
 
-![png](method_of_moments_files/method_of_moments_30_4.png)
+![png](mle_files/mle_36_4.png)
 
 
 
-![png](method_of_moments_files/method_of_moments_30_5.png)
+![png](mle_files/mle_36_5.png)
 
 
 
-![png](method_of_moments_files/method_of_moments_30_6.png)
+![png](mle_files/mle_36_6.png)
 
 
 
-![png](method_of_moments_files/method_of_moments_30_7.png)
+![png](mle_files/mle_36_7.png)
 
 
 
-![png](method_of_moments_files/method_of_moments_30_8.png)
+![png](mle_files/mle_36_8.png)
 
 
 
@@ -675,7 +880,17 @@ Lets just pick the following important statistics to estimate:
       <th>DB CPU(s)</th>
       <th>DB Time(s)</th>
       <th>Executes (SQL)</th>
+      <th>Global Cache blocks received</th>
+      <th>Global Cache blocks served</th>
+      <th>Hard parses (SQL)</th>
+      <th>IM scan rows</th>
+      <th>Logical read (blocks)</th>
       <th>...</th>
+      <th>Read IO (MB)</th>
+      <th>Read IO requests</th>
+      <th>Redo size (bytes)</th>
+      <th>Rollbacks</th>
+      <th>SQL Work Area (MB)</th>
       <th>Session Logical Read IM</th>
       <th>Transactions</th>
       <th>User calls</th>
@@ -695,17 +910,37 @@ Lets just pick the following important statistics to estimate:
       <th></th>
       <th></th>
       <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>01-APR-15 08.00.00.000000 AM</th>
-      <td>2.34</td>
+      <td>2.340000</td>
       <td>7171.66</td>
       <td>8.34</td>
       <td>21.33</td>
       <td>7295.85</td>
+      <td>4067.55</td>
+      <td>4067.66</td>
+      <td>0.53</td>
+      <td>0</td>
+      <td>368308.41</td>
       <td>...</td>
+      <td>146.02</td>
+      <td>12323.87</td>
+      <td>2520626.66</td>
+      <td>204.03</td>
+      <td>471.86</td>
       <td>NaN</td>
       <td>342.13</td>
       <td>3172.36</td>
@@ -714,12 +949,22 @@ Lets just pick the following important statistics to estimate:
     </tr>
     <tr>
       <th>01-APR-15 10.00.00.000000 PM</th>
-      <td>1.88</td>
+      <td>1.880000</td>
       <td>5829.02</td>
       <td>5.75</td>
       <td>14.98</td>
       <td>4943.24</td>
+      <td>3371.89</td>
+      <td>3374.17</td>
+      <td>0.41</td>
+      <td>0</td>
+      <td>274450.76</td>
       <td>...</td>
+      <td>237.88</td>
+      <td>9459.97</td>
+      <td>1708287.87</td>
+      <td>143.23</td>
+      <td>282.08</td>
       <td>NaN</td>
       <td>243.01</td>
       <td>2288.04</td>
@@ -728,12 +973,22 @@ Lets just pick the following important statistics to estimate:
     </tr>
     <tr>
       <th>01-JAN-15 08.00.00.000000 AM</th>
-      <td>NaN</td>
+      <td>2.157354</td>
       <td>1746.34</td>
       <td>1.80</td>
       <td>4.07</td>
       <td>2277.13</td>
+      <td>1618.04</td>
+      <td>1617.80</td>
+      <td>0.30</td>
+      <td>0</td>
+      <td>119422.36</td>
       <td>...</td>
+      <td>160.56</td>
+      <td>3976.52</td>
+      <td>577855.43</td>
+      <td>74.32</td>
+      <td>113.44</td>
       <td>NaN</td>
       <td>139.59</td>
       <td>970.47</td>
@@ -742,12 +997,22 @@ Lets just pick the following important statistics to estimate:
     </tr>
     <tr>
       <th>01-JUL-15 08.00.00.000000 AM</th>
-      <td>2.07</td>
+      <td>2.070000</td>
       <td>6530.64</td>
       <td>6.92</td>
       <td>18.46</td>
       <td>6485.98</td>
+      <td>4164.01</td>
+      <td>4164.06</td>
+      <td>1.67</td>
+      <td>0</td>
+      <td>306467.96</td>
       <td>...</td>
+      <td>155.87</td>
+      <td>9908.58</td>
+      <td>2263412.36</td>
+      <td>198.20</td>
+      <td>424.66</td>
       <td>NaN</td>
       <td>334.05</td>
       <td>3064.53</td>
@@ -756,12 +1021,22 @@ Lets just pick the following important statistics to estimate:
     </tr>
     <tr>
       <th>01-JUL-15 10.00.00.000000 PM</th>
-      <td>1.80</td>
+      <td>1.800000</td>
       <td>5853.14</td>
       <td>5.19</td>
       <td>14.20</td>
       <td>4787.97</td>
+      <td>3469.74</td>
+      <td>3469.68</td>
+      <td>0.94</td>
+      <td>0</td>
+      <td>248284.74</td>
       <td>...</td>
+      <td>192.59</td>
+      <td>8087.20</td>
+      <td>1731536.10</td>
+      <td>151.27</td>
+      <td>288.96</td>
       <td>NaN</td>
       <td>259.02</td>
       <td>2370.28</td>
@@ -779,26 +1054,26 @@ This above function would generate the MOM estimate for any database statistic t
 For example if we want to predict MOM's for "Global Cache blocks served", we just need to call this function:
 
 
-    plot_mom(df,'Global Cache blocks received')
+    plot_mle(df,'Global Cache blocks received')
     fig.savefig('images/cache_blocks.png')
 
 
-![png](method_of_moments_files/method_of_moments_33_0.png)
+![png](mle_files/mle_39_0.png)
 
 
 For "Rollbacks" example our estimation is:
 
 
-    plot_mom(df,'Rollbacks')
+    plot_mle(df,'Rollbacks')
     fig.savefig('images/rollbacks.png')
 
 
-![png](method_of_moments_files/method_of_moments_35_0.png)
+![png](mle_files/mle_41_0.png)
 
 
 ## Conclusion:
 
-As we can we our estimations (plotted in red) are pretty good estimation of our actual values that we observe in our real outputs. This concludes our discussion on MOM estimators on database statistics.
+As we can we our estimations (plotted in red) are pretty good estimation of our actual values that we observe in our real outputs. This concludes our discussion on MLE estimators on database statistics.
 
 
 </xmp>
