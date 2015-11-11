@@ -28,6 +28,7 @@ Lets say we want to use the method of moments to predict the following AWR stati
     import plotly.plotly as py
     from plotly.graph_objs import *
     import numpy as np
+    pd.set_option('display.max_columns', 10)
 
 
     Image(filename='images/load_profile.png')
@@ -157,17 +158,7 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
       <th>DB CPU(s)</th>
       <th>DB Time(s)</th>
       <th>Executes (SQL)</th>
-      <th>Global Cache blocks received</th>
-      <th>Global Cache blocks served</th>
-      <th>Hard parses (SQL)</th>
-      <th>IM scan rows</th>
-      <th>Logical read (blocks)</th>
       <th>...</th>
-      <th>Read IO (MB)</th>
-      <th>Read IO requests</th>
-      <th>Redo size (bytes)</th>
-      <th>Rollbacks</th>
-      <th>SQL Work Area (MB)</th>
       <th>Session Logical Read IM</th>
       <th>Transactions</th>
       <th>User calls</th>
@@ -176,16 +167,6 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
     </tr>
     <tr>
       <th>start_time</th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
       <th></th>
       <th></th>
       <th></th>
@@ -207,17 +188,7 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
       <td>8.34</td>
       <td>21.33</td>
       <td>7295.85</td>
-      <td>4067.55</td>
-      <td>4067.66</td>
-      <td>0.53</td>
-      <td>0</td>
-      <td>368308.41</td>
       <td>...</td>
-      <td>146.02</td>
-      <td>12323.87</td>
-      <td>2520626.66</td>
-      <td>204.03</td>
-      <td>471.86</td>
       <td>NaN</td>
       <td>342.13</td>
       <td>3172.36</td>
@@ -231,17 +202,7 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
       <td>5.75</td>
       <td>14.98</td>
       <td>4943.24</td>
-      <td>3371.89</td>
-      <td>3374.17</td>
-      <td>0.41</td>
-      <td>0</td>
-      <td>274450.76</td>
       <td>...</td>
-      <td>237.88</td>
-      <td>9459.97</td>
-      <td>1708287.87</td>
-      <td>143.23</td>
-      <td>282.08</td>
       <td>NaN</td>
       <td>243.01</td>
       <td>2288.04</td>
@@ -255,17 +216,7 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
       <td>1.80</td>
       <td>4.07</td>
       <td>2277.13</td>
-      <td>1618.04</td>
-      <td>1617.80</td>
-      <td>0.30</td>
-      <td>NaN</td>
-      <td>119422.36</td>
       <td>...</td>
-      <td>160.56</td>
-      <td>3976.52</td>
-      <td>577855.43</td>
-      <td>74.32</td>
-      <td>113.44</td>
       <td>NaN</td>
       <td>139.59</td>
       <td>970.47</td>
@@ -279,17 +230,7 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
       <td>6.92</td>
       <td>18.46</td>
       <td>6485.98</td>
-      <td>4164.01</td>
-      <td>4164.06</td>
-      <td>1.67</td>
-      <td>0</td>
-      <td>306467.96</td>
       <td>...</td>
-      <td>155.87</td>
-      <td>9908.58</td>
-      <td>2263412.36</td>
-      <td>198.20</td>
-      <td>424.66</td>
       <td>NaN</td>
       <td>334.05</td>
       <td>3064.53</td>
@@ -303,17 +244,7 @@ I am interested in forecasting only stat_per_sec information on this AWR Load pr
       <td>5.19</td>
       <td>14.20</td>
       <td>4787.97</td>
-      <td>3469.74</td>
-      <td>3469.68</td>
-      <td>0.94</td>
-      <td>0</td>
-      <td>248284.74</td>
       <td>...</td>
-      <td>192.59</td>
-      <td>8087.20</td>
-      <td>1731536.10</td>
-      <td>151.27</td>
-      <td>288.96</td>
       <td>NaN</td>
       <td>259.02</td>
       <td>2370.28</td>
@@ -471,17 +402,7 @@ Now generating our distribution with the MLE estimates.
       <th>DB CPU(s)</th>
       <th>DB Time(s)</th>
       <th>Executes (SQL)</th>
-      <th>Global Cache blocks received</th>
-      <th>Global Cache blocks served</th>
-      <th>Hard parses (SQL)</th>
-      <th>IM scan rows</th>
-      <th>Logical read (blocks)</th>
       <th>...</th>
-      <th>Read IO (MB)</th>
-      <th>Read IO requests</th>
-      <th>Redo size (bytes)</th>
-      <th>Rollbacks</th>
-      <th>SQL Work Area (MB)</th>
       <th>Session Logical Read IM</th>
       <th>Transactions</th>
       <th>User calls</th>
@@ -490,16 +411,6 @@ Now generating our distribution with the MLE estimates.
     </tr>
     <tr>
       <th>start_time</th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
       <th></th>
       <th></th>
       <th></th>
@@ -521,17 +432,7 @@ Now generating our distribution with the MLE estimates.
       <td>8.34</td>
       <td>21.33</td>
       <td>7295.85</td>
-      <td>4067.55</td>
-      <td>4067.66</td>
-      <td>0.53</td>
-      <td>0</td>
-      <td>368308.41</td>
       <td>...</td>
-      <td>146.02</td>
-      <td>12323.87</td>
-      <td>2520626.66</td>
-      <td>204.03</td>
-      <td>471.86</td>
       <td>NaN</td>
       <td>342.13</td>
       <td>3172.36</td>
@@ -545,17 +446,7 @@ Now generating our distribution with the MLE estimates.
       <td>5.75</td>
       <td>14.98</td>
       <td>4943.24</td>
-      <td>3371.89</td>
-      <td>3374.17</td>
-      <td>0.41</td>
-      <td>0</td>
-      <td>274450.76</td>
       <td>...</td>
-      <td>237.88</td>
-      <td>9459.97</td>
-      <td>1708287.87</td>
-      <td>143.23</td>
-      <td>282.08</td>
       <td>NaN</td>
       <td>243.01</td>
       <td>2288.04</td>
@@ -569,17 +460,7 @@ Now generating our distribution with the MLE estimates.
       <td>1.80</td>
       <td>4.07</td>
       <td>2277.13</td>
-      <td>1618.04</td>
-      <td>1617.80</td>
-      <td>0.30</td>
-      <td>0</td>
-      <td>119422.36</td>
       <td>...</td>
-      <td>160.56</td>
-      <td>3976.52</td>
-      <td>577855.43</td>
-      <td>74.32</td>
-      <td>113.44</td>
       <td>NaN</td>
       <td>139.59</td>
       <td>970.47</td>
@@ -593,17 +474,7 @@ Now generating our distribution with the MLE estimates.
       <td>6.92</td>
       <td>18.46</td>
       <td>6485.98</td>
-      <td>4164.01</td>
-      <td>4164.06</td>
-      <td>1.67</td>
-      <td>0</td>
-      <td>306467.96</td>
       <td>...</td>
-      <td>155.87</td>
-      <td>9908.58</td>
-      <td>2263412.36</td>
-      <td>198.20</td>
-      <td>424.66</td>
       <td>NaN</td>
       <td>334.05</td>
       <td>3064.53</td>
@@ -617,17 +488,7 @@ Now generating our distribution with the MLE estimates.
       <td>5.19</td>
       <td>14.20</td>
       <td>4787.97</td>
-      <td>3469.74</td>
-      <td>3469.68</td>
-      <td>0.94</td>
-      <td>0</td>
-      <td>248284.74</td>
       <td>...</td>
-      <td>192.59</td>
-      <td>8087.20</td>
-      <td>1731536.10</td>
-      <td>151.27</td>
-      <td>288.96</td>
       <td>NaN</td>
       <td>259.02</td>
       <td>2370.28</td>
@@ -754,7 +615,7 @@ This is an optional section but if you want to create the matplotlib images with
 
 
 
-    <matplotlib.legend.Legend at 0x111815790>
+    <matplotlib.legend.Legend at 0x110e3a0d0>
 
 
 
@@ -876,17 +737,7 @@ Lets just pick the following important statistics to estimate:
       <th>DB CPU(s)</th>
       <th>DB Time(s)</th>
       <th>Executes (SQL)</th>
-      <th>Global Cache blocks received</th>
-      <th>Global Cache blocks served</th>
-      <th>Hard parses (SQL)</th>
-      <th>IM scan rows</th>
-      <th>Logical read (blocks)</th>
       <th>...</th>
-      <th>Read IO (MB)</th>
-      <th>Read IO requests</th>
-      <th>Redo size (bytes)</th>
-      <th>Rollbacks</th>
-      <th>SQL Work Area (MB)</th>
       <th>Session Logical Read IM</th>
       <th>Transactions</th>
       <th>User calls</th>
@@ -895,16 +746,6 @@ Lets just pick the following important statistics to estimate:
     </tr>
     <tr>
       <th>start_time</th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
       <th></th>
       <th></th>
       <th></th>
@@ -926,17 +767,7 @@ Lets just pick the following important statistics to estimate:
       <td>8.34</td>
       <td>21.33</td>
       <td>7295.85</td>
-      <td>4067.55</td>
-      <td>4067.66</td>
-      <td>0.53</td>
-      <td>0</td>
-      <td>368308.41</td>
       <td>...</td>
-      <td>146.02</td>
-      <td>12323.87</td>
-      <td>2520626.66</td>
-      <td>204.03</td>
-      <td>471.86</td>
       <td>NaN</td>
       <td>342.13</td>
       <td>3172.36</td>
@@ -950,17 +781,7 @@ Lets just pick the following important statistics to estimate:
       <td>5.75</td>
       <td>14.98</td>
       <td>4943.24</td>
-      <td>3371.89</td>
-      <td>3374.17</td>
-      <td>0.41</td>
-      <td>0</td>
-      <td>274450.76</td>
       <td>...</td>
-      <td>237.88</td>
-      <td>9459.97</td>
-      <td>1708287.87</td>
-      <td>143.23</td>
-      <td>282.08</td>
       <td>NaN</td>
       <td>243.01</td>
       <td>2288.04</td>
@@ -974,17 +795,7 @@ Lets just pick the following important statistics to estimate:
       <td>1.80</td>
       <td>4.07</td>
       <td>2277.13</td>
-      <td>1618.04</td>
-      <td>1617.80</td>
-      <td>0.30</td>
-      <td>0</td>
-      <td>119422.36</td>
       <td>...</td>
-      <td>160.56</td>
-      <td>3976.52</td>
-      <td>577855.43</td>
-      <td>74.32</td>
-      <td>113.44</td>
       <td>NaN</td>
       <td>139.59</td>
       <td>970.47</td>
@@ -998,17 +809,7 @@ Lets just pick the following important statistics to estimate:
       <td>6.92</td>
       <td>18.46</td>
       <td>6485.98</td>
-      <td>4164.01</td>
-      <td>4164.06</td>
-      <td>1.67</td>
-      <td>0</td>
-      <td>306467.96</td>
       <td>...</td>
-      <td>155.87</td>
-      <td>9908.58</td>
-      <td>2263412.36</td>
-      <td>198.20</td>
-      <td>424.66</td>
       <td>NaN</td>
       <td>334.05</td>
       <td>3064.53</td>
@@ -1022,17 +823,7 @@ Lets just pick the following important statistics to estimate:
       <td>5.19</td>
       <td>14.20</td>
       <td>4787.97</td>
-      <td>3469.74</td>
-      <td>3469.68</td>
-      <td>0.94</td>
-      <td>0</td>
-      <td>248284.74</td>
       <td>...</td>
-      <td>192.59</td>
-      <td>8087.20</td>
-      <td>1731536.10</td>
-      <td>151.27</td>
-      <td>288.96</td>
       <td>NaN</td>
       <td>259.02</td>
       <td>2370.28</td>
