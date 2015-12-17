@@ -1,0 +1,1214 @@
+---
+output:
+  knitrBootstrap::bootstrap_document:
+    title: "NON-PERSONALIZED RECOMMENDER SYSTEMS USING MOVIE-LENS DATASET"
+    theme: readable
+    highlight: sunburst
+    theme.chooser: TRUE
+    highlight.chooser: TRUE
+---
+
+# NON-PERSONALIZED RECOMMENDER SYSTEMS USING MOVIE-LENS DATASET
+
+Non-personalized recommenders systems is a system where everyones gets to see the same set of recommendation. The site doesn't logs in user details and transaction info, and the site assumes that every user is same and displays a list of general recommendations.
+
+To explain this I am going to use the MovieLens data sets that were collected by the GroupLens Research Project at the University of Minnesota.
+
+This data set consists of:
+	* 100,000 ratings (1-5) from 943 users on 1682 movies. 
+	* Each user has rated at least 20 movies. 
+    * Simple demographic info for the users (age, gender, occupation, zip)
+
+I have made available their dataset and the ipython notebook used for this exercise in my github page.
+
+
+    import pandas as pd
+    import numpy as np
+    from plotly import tools
+    import plotly.plotly as py
+    from plotly.graph_objs import *
+    import datetime
+
+
+    dfdata=pd.read_csv('data/ml-100k/u.data' , sep="\t" , names=['userid', 'itemid', 'rating', 'timestamp'])
+
+
+    dfdata.head()
+
+
+ userid | itemid | rating | timestamp |
+| --- | --- | --- | --- | --- |
+| 0 | 196 | 242 | 3 | 881250949 |
+| 1 | 186 | 302 | 3 | 891717742 |
+| 2 | 22 | 377 | 1 | 878887116 |
+| 3 | 244 | 51 | 2 | 880606923 |
+| 4 | 166 | 346 | 1 | 886397596 |
+
+
+
+The fields in this dataset are the userid, itemid (movie) that a paerticular user has rating, his rating and the corresponding time at which the user has rated the movie. Please note that the timestamps are unix seconds since 1/1/1970 UTC. Lets create a fundtion that converts this information into actual datetime object
+
+
+    def epoch_to_datetime(timeinsecs):
+        return datetime.datetime.fromtimestamp(timeinsecs)
+
+Converting the timestamps into the corresponing datetime object
+
+
+    dfdata['timestamp']=dfdata['timestamp'].apply(lambda x:epoch_to_datetime(x))
+
+
+    dfdata.head()
+
+
+
+
+ userid | itemid | rating | timestamp |
+| --- | --- | --- | --- | --- |
+| 0 | 196 | 242 | 3 | 1997-12-04 07:55:49 |
+| 1 | 186 | 302 | 3 | 1998-04-04 11:22:22 |
+| 2 | 22 | 377 | 1 | 1997-11-06 23:18:36 |
+| 3 | 244 | 51 | 2 | 1997-11-26 21:02:03 |
+| 4 | 166 | 346 | 1 | 1998-02-01 21:33:16 |
+
+
+    dfdata.info()
+
+    <class 'pandas.core.frame.DataFrame'>
+    Int64Index: 100000 entries, 0 to 99999
+    Data columns (total 4 columns):
+    userid       100000 non-null int64
+    itemid       100000 non-null int64
+    rating       100000 non-null int64
+    timestamp    100000 non-null datetime64[ns]
+    dtypes: datetime64[ns](1), int64(3)
+    memory usage: 3.8 MB
+
+
+Now lets read the u.item data that contains the corresponding movie names for the movie id (itemid)
+
+Information about the items (movies); this is a tab separated list of
+	movie id | movie title | release date | video release date |
+	IMDb URL | unknown | Action | Adventure | Animation |
+	Children's | Comedy | Crime | Documentary | Drama | Fantasy |
+	Film-Noir | Horror | Musical | Mystery | Romance | Sci-Fi |
+	Thriller | War | Western |
+
+The last 19 fields are the genres, a 1 indicates the movie is of that genre, a 0 indicates it is not; movies can be in several genres at once. The movie ids are the ones used in the u.data data set.
+
+
+    dfmovie=pd.read_csv('data/ml-100k/u.item' , sep='|' , names=['itemid','movie_title','release_date','video_release_date','imdb_url','unknown','action','advanture','animation','children','comedy','crime','documentary','drama','fantasy','film-noir','horror','musical','mystery','romance','scifi','thriller','war','western'],parse_dates=True)
+
+
+    dfmovie.head()
+
+
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>itemid</th>
+      <th>movie_title</th>
+      <th>release_date</th>
+      <th>video_release_date</th>
+      <th>imdb_url</th>
+      <th>unknown</th>
+      <th>action</th>
+      <th>advanture</th>
+      <th>animation</th>
+      <th>children</th>
+      <th>...</th>
+      <th>fantasy</th>
+      <th>film-noir</th>
+      <th>horror</th>
+      <th>musical</th>
+      <th>mystery</th>
+      <th>romance</th>
+      <th>scifi</th>
+      <th>thriller</th>
+      <th>war</th>
+      <th>western</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1</td>
+      <td>Toy Story (1995)</td>
+      <td>01-Jan-1995</td>
+      <td>NaN</td>
+      <td>http://us.imdb.com/M/title-exact?Toy%20Story%2...</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>1</td>
+      <td>...</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2</td>
+      <td>GoldenEye (1995)</td>
+      <td>01-Jan-1995</td>
+      <td>NaN</td>
+      <td>http://us.imdb.com/M/title-exact?GoldenEye%20(...</td>
+      <td>0</td>
+      <td>1</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>...</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>3</td>
+      <td>Four Rooms (1995)</td>
+      <td>01-Jan-1995</td>
+      <td>NaN</td>
+      <td>http://us.imdb.com/M/title-exact?Four%20Rooms%...</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>...</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>4</td>
+      <td>Get Shorty (1995)</td>
+      <td>01-Jan-1995</td>
+      <td>NaN</td>
+      <td>http://us.imdb.com/M/title-exact?Get%20Shorty%...</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>...</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>5</td>
+      <td>Copycat (1995)</td>
+      <td>01-Jan-1995</td>
+      <td>NaN</td>
+      <td>http://us.imdb.com/M/title-exact?Copycat%20(1995)</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>...</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+  </tbody>
+</table>
+<p>5 rows × 24 columns</p>
+</div>
+
+
+
+For the sake of this exercise I am just using the movie title and itemid (movie id), lets ignore other columns
+
+
+    dfmovie=dfmovie[['itemid','movie_title']]
+
+
+    dfmovie.head()
+
+
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>itemid</th>
+      <th>movie_title</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1</td>
+      <td>Toy Story (1995)</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2</td>
+      <td>GoldenEye (1995)</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>3</td>
+      <td>Four Rooms (1995)</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>4</td>
+      <td>Get Shorty (1995)</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>5</td>
+      <td>Copycat (1995)</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+Lets merge all these data into our original dataframe so that we also have all the movie information alongside.
+
+
+    df=pd.merge(dfdata,dfmovie,on='itemid')
+
+
+    df.head()
+
+
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>userid</th>
+      <th>itemid</th>
+      <th>rating</th>
+      <th>timestamp</th>
+      <th>movie_title</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>196</td>
+      <td>242</td>
+      <td>3</td>
+      <td>1997-12-04 07:55:49</td>
+      <td>Kolya (1996)</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>63</td>
+      <td>242</td>
+      <td>3</td>
+      <td>1997-10-01 16:06:30</td>
+      <td>Kolya (1996)</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>226</td>
+      <td>242</td>
+      <td>5</td>
+      <td>1998-01-03 20:37:51</td>
+      <td>Kolya (1996)</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>154</td>
+      <td>242</td>
+      <td>3</td>
+      <td>1997-11-09 21:03:55</td>
+      <td>Kolya (1996)</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>306</td>
+      <td>242</td>
+      <td>5</td>
+      <td>1997-10-10 10:16:33</td>
+      <td>Kolya (1996)</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+Now say we are entering a website like Netflix without logging in and not providing any user-specific information. For non-personalized recommendation, the question is what movies do we recommend for the users to watch. There are many ways to approach this, lets take a stab at it one by one.
+
+## MEAN RATING
+
+In this approach we calculate the mean mean rating for each movie, order with the highest rating listed first, and submit the top rated movies. 
+
+
+    grouped=df.groupby('movie_title')
+
+
+    grouped.aggregate(np.mean)['rating'].sort(ascending=False,inplace=False).head(20)
+
+    /Users/aukauk/anaconda3/envs/python2/lib/python2.7/site-packages/ipykernel/__main__.py:1: FutureWarning:
+    
+    sort is deprecated, use sort_values(inplace=True) for for INPLACE sorting
+    
+
+
+
+
+
+    movie_title
+    Marlene Dietrich: Shadow and Light (1996)                 5.000000
+    Prefontaine (1997)                                        5.000000
+    Santa with Muscles (1996)                                 5.000000
+    Star Kid (1997)                                           5.000000
+    Someone Else's America (1995)                             5.000000
+    Entertaining Angels: The Dorothy Day Story (1996)         5.000000
+    Saint of Fort Washington, The (1993)                      5.000000
+    Great Day in Harlem, A (1994)                             5.000000
+    They Made Me a Criminal (1939)                            5.000000
+    Aiqing wansui (1994)                                      5.000000
+    Pather Panchali (1955)                                    4.625000
+    Anna (1996)                                               4.500000
+    Everest (1998)                                            4.500000
+    Maya Lin: A Strong Clear Vision (1994)                    4.500000
+    Some Mother's Son (1996)                                  4.500000
+    Close Shave, A (1995)                                     4.491071
+    Schindler's List (1993)                                   4.466443
+    Wrong Trousers, The (1993)                                4.466102
+    Casablanca (1942)                                         4.456790
+    Wallace & Gromit: The Best of Aardman Animation (1996)    4.447761
+    Name: rating, dtype: float64
+
+
+
+
+    avg_rating_df=grouped.aggregate(np.mean)['rating'].sort(ascending=False,inplace=False).to_frame().reset_index()
+
+    /Users/aukauk/anaconda3/envs/python2/lib/python2.7/site-packages/ipykernel/__main__.py:1: FutureWarning:
+    
+    sort is deprecated, use sort_values(inplace=True) for for INPLACE sorting
+    
+
+
+
+    avg_rating_df.head()
+
+
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>movie_title</th>
+      <th>rating</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Marlene Dietrich: Shadow and Light (1996)</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Prefontaine (1997)</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Santa with Muscles (1996)</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Star Kid (1997)</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Someone Else's America (1995)</td>
+      <td>5</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+Say I want to recommend all the users in the front landing page the movies with the average rating of 5 stars, I would recommend the following movies.
+
+
+    avg_rating_df[avg_rating_df['rating']==5]
+
+
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>movie_title</th>
+      <th>rating</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Marlene Dietrich: Shadow and Light (1996)</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Prefontaine (1997)</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Santa with Muscles (1996)</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Star Kid (1997)</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Someone Else's America (1995)</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>Entertaining Angels: The Dorothy Day Story (1996)</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>Saint of Fort Washington, The (1993)</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>Great Day in Harlem, A (1994)</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>They Made Me a Criminal (1939)</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>Aiqing wansui (1994)</td>
+      <td>5</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+Something seems obviously wrong (apologies if your faviourite movies is among in this list), but most of these movies seems not that popular compared to several other good movies I have seen. 
+
+To dig more closer, lets get an histogram of how many people have rated these movies that show the average rating of 5 stars.
+
+
+    movie_list=avg_rating_df[avg_rating_df['rating']==5]['movie_title']
+    num_raters=[]
+    for movie in movie_list:
+        num_raters.append(len(df[df['movie_title']==movie]))
+    print num_raters
+    data = [
+       Histogram (
+        x=num_raters
+     )
+    ]
+    py.iplot(data, filename = 'Histogram_People_Rating_A_Movie')
+
+    [1, 3, 2, 3, 1, 1, 2, 1, 1, 1]
+
+
+
+    ---------------------------------------------------------------------------
+
+    ConnectionError                           Traceback (most recent call last)
+
+    <ipython-input-20-a44dca527ceb> in <module>()
+          9  )
+         10 ]
+    ---> 11 py.iplot(data, filename = 'Histogram_People_Rating_A_Movie')
+    
+
+    /Users/aukauk/anaconda3/envs/python2/lib/python2.7/site-packages/plotly/plotly/plotly.pyc in iplot(figure_or_data, **plot_options)
+        176     if 'auto_open' not in plot_options:
+        177         plot_options['auto_open'] = False
+    --> 178     url = plot(figure_or_data, **plot_options)
+        179 
+        180     if isinstance(figure_or_data, dict):
+
+
+    /Users/aukauk/anaconda3/envs/python2/lib/python2.7/site-packages/plotly/plotly/plotly.pyc in plot(figure_or_data, validate, **plot_options)
+        260 
+        261     plot_options = _plot_option_logic(plot_options)
+    --> 262     res = _send_to_plotly(figure, **plot_options)
+        263     if res['error'] == '':
+        264         if plot_options['auto_open']:
+
+
+    /Users/aukauk/anaconda3/envs/python2/lib/python2.7/site-packages/plotly/plotly/plotly.pyc in _send_to_plotly(figure, **plot_options)
+       1418 
+       1419     r = requests.post(url, data=payload,
+    -> 1420                       verify=get_config()['plotly_ssl_verification'])
+       1421     r.raise_for_status()
+       1422     r = json.loads(r.text)
+
+
+    /Users/aukauk/anaconda3/envs/python2/lib/python2.7/site-packages/requests/api.pyc in post(url, data, json, **kwargs)
+        107     """
+        108 
+    --> 109     return request('post', url, data=data, json=json, **kwargs)
+        110 
+        111 
+
+
+    /Users/aukauk/anaconda3/envs/python2/lib/python2.7/site-packages/requests/api.pyc in request(method, url, **kwargs)
+         48 
+         49     session = sessions.Session()
+    ---> 50     response = session.request(method=method, url=url, **kwargs)
+         51     # By explicitly closing the session, we avoid leaving sockets open which
+         52     # can trigger a ResourceWarning in some cases, and look like a memory leak
+
+
+    /Users/aukauk/anaconda3/envs/python2/lib/python2.7/site-packages/requests/sessions.pyc in request(self, method, url, params, data, headers, cookies, files, auth, timeout, allow_redirects, proxies, hooks, stream, verify, cert, json)
+        466         }
+        467         send_kwargs.update(settings)
+    --> 468         resp = self.send(prep, **send_kwargs)
+        469 
+        470         return resp
+
+
+    /Users/aukauk/anaconda3/envs/python2/lib/python2.7/site-packages/requests/sessions.pyc in send(self, request, **kwargs)
+        574 
+        575         # Send the request
+    --> 576         r = adapter.send(request, **kwargs)
+        577 
+        578         # Total elapsed time of the request (approximately)
+
+
+    /Users/aukauk/anaconda3/envs/python2/lib/python2.7/site-packages/requests/adapters.pyc in send(self, request, stream, timeout, verify, cert, proxies)
+        421                 raise RetryError(e, request=request)
+        422 
+    --> 423             raise ConnectionError(e, request=request)
+        424 
+        425         except ClosedPoolError as e:
+
+
+    ConnectionError: HTTPSConnectionPool(host='plot.ly', port=443): Max retries exceeded with url: /clientresp (Caused by ProxyError('Cannot connect to proxy.', NewConnectionError('<requests.packages.urllib3.connection.VerifiedHTTPSConnection object at 0x10b30e650>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known',)))
+
+
+This is exactly where our problem is. The problem is that all of these movies are rated by either 1, 2 or 3 users and they have all given 5 stars to it. That doesnt make these movies great and we would rather shows the movies that have been rated by many number of users and also with highest ratings on our recommendations. This is the issue with a lot of non-personalized recommenders.
+
+## SCALES AND NORMALIZATION
+
+Take a look at the following link : https://janav.wordpress.com/2013/09/21/non-personalized-recommenders/ 
+
+The author explains amazon.com's non-personalized recommendations that appear in section "customers who bought this item also bought" when users tries to look for a product.
+
+How would it look like when we want to recommend movies instead of amazon product.
+
+To illustrates this, I have taken out the following 5 movies in the movielens dataset.
+
+
+    movies=['Star Wars (1977)','Toy Story (1995)','GoodFellas (1990)','12 Angry Men (1957)', 'Alien 3 (1992)','']
+
+
+    movies
+
+
+
+
+    ['Star Wars (1977)',
+     'Toy Story (1995)',
+     'GoodFellas (1990)',
+     '12 Angry Men (1957)',
+     'Alien 3 (1992)',
+     '']
+
+
+
+
+    dfr=df[df['movie_title'].isin(movies)]
+    dfr.head()
+
+
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>userid</th>
+      <th>itemid</th>
+      <th>rating</th>
+      <th>timestamp</th>
+      <th>movie_title</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>3397</th>
+      <td>308</td>
+      <td>1</td>
+      <td>4</td>
+      <td>1998-02-17 09:28:52</td>
+      <td>Toy Story (1995)</td>
+    </tr>
+    <tr>
+      <th>3398</th>
+      <td>287</td>
+      <td>1</td>
+      <td>5</td>
+      <td>1997-09-26 21:21:28</td>
+      <td>Toy Story (1995)</td>
+    </tr>
+    <tr>
+      <th>3399</th>
+      <td>148</td>
+      <td>1</td>
+      <td>4</td>
+      <td>1997-10-16 09:30:11</td>
+      <td>Toy Story (1995)</td>
+    </tr>
+    <tr>
+      <th>3400</th>
+      <td>280</td>
+      <td>1</td>
+      <td>4</td>
+      <td>1998-04-04 06:33:46</td>
+      <td>Toy Story (1995)</td>
+    </tr>
+    <tr>
+      <th>3401</th>
+      <td>66</td>
+      <td>1</td>
+      <td>3</td>
+      <td>1997-12-31 12:48:44</td>
+      <td>Toy Story (1995)</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+    dfr=dfr.pivot_table(values='rating', index='userid', columns='movie_title')
+
+
+    dfr.head()
+
+
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>movie_title</th>
+      <th>12 Angry Men (1957)</th>
+      <th>Alien 3 (1992)</th>
+      <th>GoodFellas (1990)</th>
+      <th>Star Wars (1977)</th>
+      <th>Toy Story (1995)</th>
+    </tr>
+    <tr>
+      <th>userid</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>1</th>
+      <td>5</td>
+      <td>NaN</td>
+      <td>4</td>
+      <td>5</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>5</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>5</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>4</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>4</td>
+      <td>NaN</td>
+      <td>4</td>
+      <td>4</td>
+      <td>4</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+Lets convert all nans to 0 and all other ratings to 1s.
+
+
+    def convert_to_zeros_ones(x):
+        if x > 0:
+            return 1
+        else:
+            return 0
+    dfr=dfr.applymap(lambda x:convert_to_zeros_ones(x))
+    dfr.head()
+
+
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>movie_title</th>
+      <th>12 Angry Men (1957)</th>
+      <th>Alien 3 (1992)</th>
+      <th>GoodFellas (1990)</th>
+      <th>Star Wars (1977)</th>
+      <th>Toy Story (1995)</th>
+    </tr>
+    <tr>
+      <th>userid</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>1</th>
+      <td>1</td>
+      <td>0</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>1</td>
+      <td>0</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+Say I like "12 Angry Men" and I want to watch this movie. In order for the non-personalized recommender system to recommender other movies that people have watched based on this movie, we use the following formulae.
+
+Score(X, Y) =  Total People who watched X and Y / Total People who watched X
+
+Total People who watched X are: (non-null entries)
+
+
+    dfr['12 Angry Men (1957)'].sum()
+
+
+
+
+    125
+
+
+
+Total People who watched X and Y:
+
+
+    y_vals=['Star Wars (1977)','Toy Story (1995)','GoodFellas (1990)', 'Alien 3 (1992)']
+
+
+    score_dict={}
+    for y in y_vals:
+        x_and_y=pd.DataFrame(dfr['12 Angry Men (1957)']*dfr[y]).sum()
+        score_dict[y]=x_and_y.values*1./dfr['12 Angry Men (1957)'].sum()
+
+
+    score_dict
+
+
+
+
+    {'Alien 3 (1992)': array([ 0.208]),
+     'GoodFellas (1990)': array([ 0.48]),
+     'Star Wars (1977)': array([ 0.872]),
+     'Toy Story (1995)': array([ 0.648])}
+
+
+
+Hence based on the highest scores, we would recommend 'Star Wars (1977)' and 'Toy Story (1995)' for the user to watch.
+
+### BANANA TRAP
+
+We want to make sure we aren't in banana trap here. What is a banana trap?
+
+In a grocery store most of the customers will buy bananas. If someone buys a razor and a banana then you cannot tell that the purchase of a razor influenced the purchase of banana. Hence we need to adjust the formula to handle this case as well. The modified version is
+
+(Total People who watched X and Y / Total People who watched X) / 
+(Total People who did not watch X but watched Y / Total People who did not watch X)
+
+We have the numberator, we just need to calculate the denominator. Lets create a seperate column for people who did not watch 12 Angry Men.
+
+
+    '''convert 1s to 0s and vice versa for 12 angry men'''
+    def ones_to_zeros(x):
+        if x==1:
+            return 0
+        else:
+            return 1
+    dfr['Not_12_Angry_Men']=dfr['12 Angry Men (1957)'].apply(lambda x:ones_to_zeros(x))
+    dfr.head()
+
+
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>movie_title</th>
+      <th>12 Angry Men (1957)</th>
+      <th>Alien 3 (1992)</th>
+      <th>GoodFellas (1990)</th>
+      <th>Star Wars (1977)</th>
+      <th>Toy Story (1995)</th>
+      <th>Not_12_Angry_Men</th>
+    </tr>
+    <tr>
+      <th>userid</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>1</th>
+      <td>1</td>
+      <td>0</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>1</td>
+      <td>0</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+    score_dict={}
+    for y in y_vals:
+        x_and_y=pd.DataFrame(dfr['12 Angry Men (1957)']*dfr[y]).sum()
+        tot_x=dfr['12 Angry Men (1957)'].sum()
+        notx_and_y=pd.DataFrame(dfr['Not_12_Angry_Men']*dfr[y]).sum()
+        tot_notx=dfr['Not_12_Angry_Men'].sum()
+        score_dict[y]=(x_and_y.values*1./tot_x)/(notx_and_y*1./tot_notx)
+
+
+    score_dict
+
+
+
+
+    {'Alien 3 (1992)': 0    1.576865
+     dtype: float64, 'GoodFellas (1990)': 0    1.622169
+     dtype: float64, 'Star Wars (1977)': 0    1.032051
+     dtype: float64, 'Toy Story (1995)': 0    0.97986
+     dtype: float64}
+
+
+
+This completely changes the game. Our normalized recommendation after adjusting for banana trap are GoodFellas (1990) and Alien 3 (1992) . This clearly shows that almost a lot of users had rated on the Toy Story and Star Wars.
+
+# DAMPED MEANS
+
+
+    df.head()
+
+
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>userid</th>
+      <th>itemid</th>
+      <th>rating</th>
+      <th>timestamp</th>
+      <th>movie_title</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>196</td>
+      <td>242</td>
+      <td>3</td>
+      <td>1997-12-04 07:55:49</td>
+      <td>Kolya (1996)</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>63</td>
+      <td>242</td>
+      <td>3</td>
+      <td>1997-10-01 16:06:30</td>
+      <td>Kolya (1996)</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>226</td>
+      <td>242</td>
+      <td>5</td>
+      <td>1998-01-03 20:37:51</td>
+      <td>Kolya (1996)</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>154</td>
+      <td>242</td>
+      <td>3</td>
+      <td>1997-11-09 21:03:55</td>
+      <td>Kolya (1996)</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>306</td>
+      <td>242</td>
+      <td>5</td>
+      <td>1997-10-10 10:16:33</td>
+      <td>Kolya (1996)</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+    grouped=df.groupby(['movie_title'])
+    
+    
+    dm_df=grouped['rating'].agg([np.sum, np.mean]).reset_index()
+    
+    
+    dm_df['count_ratings']=grouped.size().reset_index()[0]
+    
+    
+    dm_df.head()
+
+
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>movie_title</th>
+      <th>sum</th>
+      <th>mean</th>
+      <th>count_ratings</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>'Til There Was You (1997)</td>
+      <td>21</td>
+      <td>2.333333</td>
+      <td>9</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1-900 (1994)</td>
+      <td>13</td>
+      <td>2.600000</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>101 Dalmatians (1996)</td>
+      <td>317</td>
+      <td>2.908257</td>
+      <td>109</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>12 Angry Men (1957)</td>
+      <td>543</td>
+      <td>4.344000</td>
+      <td>125</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>187 (1997)</td>
+      <td>124</td>
+      <td>3.024390</td>
+      <td>41</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+    
